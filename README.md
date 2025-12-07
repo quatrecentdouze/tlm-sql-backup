@@ -14,7 +14,7 @@ A Rust CLI tool for automated MySQL backups with scheduling, Discord upload, and
 ## Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/quatrecentdouze/tlm-sql-backup.git
 cd tlm-sql-backup
 cargo build --release
 cargo run --release
