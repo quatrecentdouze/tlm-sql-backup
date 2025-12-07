@@ -1,0 +1,28 @@
+[package]
+name = "tlm-sql-backup"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+mysql_async = "0.34"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+reqwest = { version = "0.12", features = ["json", "multipart", "stream"] }
+zip = "2"
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dialoguer = "0.11"
+console = "0.15"
+crossterm = "0.27"
+sha2 = "0.10"
+hex = "0.4"
+dirs = "5"
+ctrlc = { version = "3", features = ["termination"] }
+async-trait = "0.1"
+futures = "0.3"
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors", "auth"] }
+base64 = "0.22"

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLM Backup Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            950: '#020617',
+                            900: '#0a0e1c',
+                            800: '#151c2f',
+                            700: '#24304a',
+                        },
+                        accent: {
+                            emerald: '#059669',
+                            cyan: '#0891b2',
+                            purple: '#7c3aed'
+                        }
+                    },
+                    boxShadow: {
+                        'soft-glow': '0 0 20px rgba(5, 150, 105, 0.1)',
+                        'card-glass': '0 8px 32px 0 rgba(0, 0, 0, 0.5)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .ambient-background {
+            position: fixed;
+            inset: 0;
+            background-color: #01030b;
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        .bg-grid-pattern {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 85%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 85%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .ambient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.25;
+            mix-blend-mode: screen;
+        }
+
+        .orb-1 {
+            background: radial-gradient(circle, rgba(30, 58, 138, 0.4) 0%, rgba(0, 0, 0, 0) 70%);
+            width: 90vw;
+            height: 90vh;
+            top: -30%;
+            left: -20%;
+            animation: drift-1 35s ease-in-out infinite alternate;
+        }
+
+        .orb-2 {
+            background: radial-gradient(circle, rgba(12, 74, 110, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
+            width: 80vw;
+            height: 80vh;
+            bottom: -30%;
+            right: -30%;
+            animation: drift-2 40s ease-in-out infinite alternate;
+        }
+
+        .orb-3 {
+            background: radial-gradient(circle, rgba(6, 78, 59, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+            width: 60vw;
+            height: 60vh;
+            top: 30%;
+            left: 20%;
+            opacity: 0.15;
+            animation: drift-3 45s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift-1 {
+            100% {
+                transform: translate(5%, 5%) scale(1.05);
+            }
+        }
+
+        @keyframes drift-2 {
+            100% {
+                transform: translate(-5%, -5%) scale(1.1);
+            }
+        }
+
+        @keyframes drift-3 {
+            100% {
+                transform: translate(-10%, 2%) rotate(10deg);
+            }
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 10px 2px rgba(5, 150, 105, 0.5);
+            }
+        }
+
+        .glass-card {
+            background: rgba(10, 14, 28, 0.75);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .glass-card:hover {
+            background: rgba(13, 18, 35, 0.85);
+            border-color: rgba(255, 255, 255, 0.07);
+        }
+
+        .glass-header {
+            background: rgba(8, 11, 22, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .glass-soft {
+            background: rgba(10, 14, 28, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 0.75rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .gradient-text {
+            background-image: linear-gradient(to right, #0d9488, #0e7490, #4f46e5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        .metric-label {
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body class="bg-dark-950 text-slate-200 min-h-screen antialiased relative selection:bg-emerald-900/50 font-sans">
+
+    <div class="ambient-background">
+        <div class="bg-grid-pattern"></div>
+        <div class="ambient-orb orb-1"></div>
+        <div class="ambient-orb orb-2"></div>
+        <div class="ambient-orb orb-3"></div>
+    </div>
+
+    <div x-data="dashboard()" x-init="init()" class="relative z-10 flex flex-col min-h-screen">
+        <header class="px-6 pt-6">
+            <div class="max-w-7xl mx-auto">
+                <div
+                    class="glass-card sticky top-4 z-20 px-5 py-4 flex items-center justify-between gap-4 shadow-card-glass">
+                    <div class="flex flex-col">
+                        <h1 class="text-xl sm:text-2xl gradient-text">
+                            TLM Backup Dashboard
+                        </h1>
+                        <p class="text-xs text-slate-500 mt-1 tracking-wide">
+                            Synthetic view of your backup scheduler &amp; history
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
+                            <span class="relative flex h-2 w-2">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-600 opacity-50"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                            </span>
+                            <span class="text-xs text-slate-400 font-medium">Live</span>
+                        </div>
+                        <div class="hidden sm:flex flex-col items-end text-xs text-slate-500">
+                            <span class="font-medium text-slate-500">Last updated</span>
+                            <span class="font-mono text-[11px] opacity-70" x-text="lastUpdate"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow max-w-7xl mx-auto px-6 py-8 space-y-8 w-full">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="glass-card p-6 transition-all duration-500 hover:-translate-y-1 group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div>
+                            <p
+                                class="metric-label text-[10px] text-slate-500 mb-2 group-hover:text-emerald-500 transition-colors">
+                                Scheduler</p>
+                            <p class="text-xs text-slate-500">Backup runner status</p>
+                        </div>
+                        <div :class="status.scheduler_running ? 'bg-emerald-600 pulse-glow shadow-[0_0_15px_rgba(5,150,105,0.3)]' : 'bg-rose-800/70'"
+                            class="w-3 h-3 rounded-full border border-dark-900/50"></div>
+                    </div>
+                    <p class="text-2xl font-semibold text-slate-200">
+                        <span x-text="status.scheduler_running ? 'Running' : 'Stopped'"></span>
+                    </p>
+                    <p class="text-xs text-slate-500 mt-3 flex items-center gap-2" x-show="status.next_run">
+                        <svg class="w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Next: <span x-text="status.next_run" class="text-slate-400 font-mono text-[11px]"></span>
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 transition-all duration-500 hover:-translate-y-1 group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div>
+                            <p
+                                class="metric-label text-[10px] text-slate-500 mb-2 group-hover:text-emerald-500 transition-colors">
+                                Backups</p>
+                            <p class="text-xs text-slate-500">Total archives</p>
+                        </div>
+                        <div
+                            class="w-9 h-9 rounded-lg bg-emerald-900/20 border border-emerald-800/30 flex items-center justify-center text-emerald-500 shadow-soft-glow">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-semibold tracking-tight text-slate-200" x-text="status.total_backups ?? 0">
+                    </p>
+                    <p class="text-xs text-slate-500 mt-3">
+                        <span class="font-mono text-[11px] text-slate-400"
+                            x-text="status.total_size_mb?.toFixed(2) ?? '0.00'"></span>
+                        <span class="text-slate-600">MB stored</span>
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 transition-all duration-500 hover:-translate-y-1 group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div>
+                            <p
+                                class="metric-label text-[10px] text-slate-500 mb-2 group-hover:text-cyan-500 transition-colors">
+                                Reliability</p>
+                            <p class="text-xs text-slate-500">Success ratio</p>
+                        </div>
+                        <div
+                            class="w-9 h-9 rounded-lg bg-cyan-900/20 border border-cyan-800/30 flex items-center justify-center text-cyan-500 shadow-[0_0_15px_rgba(8,145,178,0.1)]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <p class="text-3xl font-semibold tracking-tight text-slate-200"
+                            x-text="status.success_rate?.toFixed(1) ?? '0.0'"></p>
+                        <span class="text-sm text-slate-500">%</span>
+                    </div>
+                    <div class="w-full bg-dark-800/80 h-1 mt-3 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-cyan-700 to-emerald-600 rounded-full"
+                            :style="`width: ${status.success_rate}%`"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 transition-all duration-500 hover:-translate-y-1 group">
+                    <div class="flex items-start justify-between mb-5">
+                        <div>
+                            <p
+                                class="metric-label text-[10px] text-slate-500 mb-2 group-hover:text-purple-500 transition-colors">
+                                System</p>
+                            <p class="text-xs text-slate-500">Integrations</p>
+                        </div>
+                        <div
+                            class="w-9 h-9 rounded-lg bg-purple-900/20 border border-purple-800/30 flex items-center justify-center text-purple-500 shadow-[0_0_15px_rgba(124,58,237,0.1)]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-lg font-semibold text-slate-200">
+                        <span x-text="status.database_connections ?? 0"></span>
+                        <span class="text-slate-500 text-sm ml-1 font-normal">connections</span>
+                    </p>
+                    <div class="mt-3 flex items-center gap-2">
+                        <span
+                            :class="status.discord_configured ? 'text-emerald-500 bg-emerald-900/20 border-emerald-800/30' : 'text-slate-500 bg-dark-800/50 border-dark-700/50'"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] backdrop-blur-md transition-colors">
+                            <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 -28.5 256 256" version="1.1"
+                                xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                preserveAspectRatio="xMidYMid">
+                                <g>
+                                    <path
+                                        d="M216.856339,16.5966031 C200.285002,8.84328665 182.566144,3.2084988 164.041564,0 C161.766523,4.11318106 159.108624,9.64549908 157.276099,14.0464379 C137.583995,11.0849896 118.072967,11.0849896 98.7430163,14.0464379 C96.9108417,9.64549908 94.1925838,4.11318106 91.8971895,0 C73.3526068,3.2084988 55.6133949,8.86399117 39.0420583,16.6376612 C5.61752293,67.146514 -3.4433191,116.400813 1.08711069,164.955721 C23.2560196,181.510915 44.7403634,191.567697 65.8621325,198.148576 C71.0772151,190.971126 75.7283628,183.341335 79.7352139,175.300261 C72.104019,172.400575 64.7949724,168.822202 57.8887866,164.667963 C59.7209612,163.310589 61.5131304,161.891452 63.2445898,160.431257 C105.36741,180.133187 151.134928,180.133187 192.754523,160.431257 C194.506336,161.891452 196.298154,163.310589 198.110326,164.667963 C191.183787,168.842556 183.854737,172.420929 176.223542,175.320965 C180.230393,183.341335 184.861538,190.991831 190.096624,198.16893 C211.238746,191.588051 232.743023,181.531619 254.911949,164.955721 C260.227747,108.668201 245.831087,59.8662432 216.856339,16.5966031 Z M85.4738752,135.09489 C72.8290281,135.09489 62.4592217,123.290155 62.4592217,108.914901 C62.4592217,94.5396472 72.607595,82.7145587 85.4738752,82.7145587 C98.3405064,82.7145587 108.709962,94.5189427 108.488529,108.914901 C108.508531,123.290155 98.3405064,135.09489 85.4738752,135.09489 Z M170.525237,135.09489 C157.88039,135.09489 147.510584,123.290155 147.510584,108.914901 C147.510584,94.5396472 157.658606,82.7145587 170.525237,82.7145587 C183.391518,82.7145587 193.761324,94.5189427 193.539891,108.914901 C193.539891,123.290155 183.391518,135.09489 170.525237,135.09489 Z"
+                                        fill="#5865F2" fill-rule="nonzero">
+                                    </path>
+                                </g>
+                            </svg>
+                            <span x-text="status.discord_configured ? 'Discord Active' : 'Discord Inactive'"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card overflow-hidden shadow-card-glass">
+                <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between glass-header">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+                            Recent activity
+                            <span
+                                class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/5"
+                                x-text="history.length + ' logs'"></span>
+                        </h2>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span
+                            class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-dark-800/50 border border-dark-700/50 backdrop-blur-md">
+                            <span
+                                class="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-[0_0_5px_rgba(5,150,105,0.3)]"></span>
+                            Success
+                        </span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-dark-900/60 border-b border-white/5">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-[10px] font-medium text-slate-500 metric-label">
+                                    Status</th>
+                                <th class="px-6 py-3 text-left text-[10px] font-medium text-slate-500 metric-label">
+                                    Timestamp</th>
+                                <th class="px-6 py-3 text-left text-[10px] font-medium text-slate-500 metric-label">
+                                    Target</th>
+                                <th class="px-6 py-3 text-left text-[10px] font-medium text-slate-500 metric-label">
+                                    Databases</th>
+                                <th class="px-6 py-3 text-left text-[10px] font-medium text-slate-500 metric-label">Size
+                                </th>
+                                <th class="px-6 py-3 text-left text-[10px] font-medium text-slate-500 metric-label">
+                                    Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <template x-for="backup in history" :key="backup.timestamp">
+                                <tr class="hover:bg-white/5 transition-colors group">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span x-show="backup.success"
+                                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-900/30 text-emerald-500 border border-emerald-800/30">Success</span>
+                                        <span x-show="!backup.success"
+                                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-900/30 text-rose-500 border border-rose-800/30">Failed</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500 group-hover:text-slate-400 transition-colors"
+                                        x-text="formatDate(backup.timestamp)"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-300"
+                                        x-text="backup.connection_name"></td>
+                                    <td class="px-6 py-4 text-sm text-slate-500">
+                                        <div class="flex flex-wrap gap-1">
+                                            <template x-for="db in backup.databases">
+                                                <span
+                                                    class="text-[10px] px-1.5 py-0.5 rounded bg-dark-800 text-slate-500 border border-dark-700/50"
+                                                    x-text="db"></span>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                                        <span class="font-mono text-xs"
+                                            x-text="(backup.file_size / 1024 / 1024).toFixed(2) + ' MB'"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                                        <span class="font-mono text-xs" x-text="backup.duration_secs + 's'"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer class="px-6 pb-6 mt-auto">
+            <div class="max-w-7xl mx-auto">
+                <div
+                    class="glass-soft px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-slate-500 shadow-sm">
+                    <span class="font-medium text-slate-500">TLM Database Backup CLI</span>
+                    <span class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-pulse"></span>
+                        System healthy • Auto-refresh active
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                status: {},
+                history: [],
+                lastUpdate: 'Never',
+
+                async init() {
+                    await this.fetchData();
+                    setInterval(() => this.fetchData(), 5000);
+                },
+
+                async fetchData() {
+                    try {
+                        const [statusRes, historyRes] = await Promise.all([
+                            fetch('/api/status'),
+                            fetch('/api/history')
+                        ]);
+
+                        const statusData = await statusRes.json();
+                        const historyData = await historyRes.json();
+
+                        if (statusData.success) this.status = statusData.data;
+                        if (historyData.success) this.history = historyData.data;
+
+                        this.lastUpdate = new Date().toLocaleTimeString();
+                    } catch (e) {
+                        console.error('Failed to fetch data:', e);
+                    }
+                },
+
+                formatDate(timestamp) {
+                    if (!timestamp) return '';
+                    return new Date(timestamp).toLocaleString(undefined, {
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>
