@@ -108,6 +108,24 @@ password = "your-password"
 - **Ctrl+C once**: Sends shutdown signal, waits for current backup
 - **Ctrl+C twice**: Force exit
 
+## 💡 Troubleshooting
+
+### ❗ Linux: `openssl-sys` build error
+**Error:** Missing OpenSSL or `pkg-config` during `cargo build --release`.  
+**Fix (Debian/Ubuntu):**
+```bash
+sudo apt install pkg-config libssl-dev
+````
+
+**Fix (Fedora/CentOS):**
+
+```bash
+sudo dnf install pkg-config openssl-devel
+```
+
+
+
+
 ## License
 
 MIT
